@@ -1,0 +1,8 @@
+# librarian-puppet configuration.
+
+forge "http://forge.puppetlabs.com"
+
+mod "sensu/sensu"
+mod "puppetlabs/rabbitmq"
+mod "example42/redis"
+
