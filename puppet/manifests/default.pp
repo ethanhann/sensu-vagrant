@@ -1,34 +1,48 @@
 node default {
+  include '::apt'
+
+# Sensu
+  package { 'sensu-plugin':
+    ensure   => 'installed',
+    provider => 'gem',
+  }
+
   class { 'sensu':
-    # Server config
+  # Server config
     rabbitmq_password => 'd2fj2h02FG83dh2A0hd',
     server            => true,
     dashboard         => true,
     api               => true,
-    plugins           => [
-      'puppet:///data/sensu/plugins/ntp.rb',
-      'puppet:///data/sensu/plugins/postfix.rb'
-    ],
-    # Client config
-    subscriptions      => 'sensu-test',
-    rabbitmq_host      => 'localhost',
+  # Client config
+    subscriptions     => 'sensu-test',
+    rabbitmq_host     => 'localhost',
+    client_name       => 'sensu-client',
+    require           => [Class['::rabbitmq'], Class['redis'], Package['sensu-plugin']],
   }
 
-  sensu::handler { 'default':
-    command => 'mail -s \'sensu alert\' ops@foo.com',
-  }
-
-  sensu::check { 'check_ntp':
-    command     => 'PATH=$PATH:/usr/lib/nagios/plugins check_ntp_time -H pool.ntp.org -w 30 -c 60',
-    handlers    => 'default',
-    subscribers => 'sensu-test'
-  }
-  
+# Rabbit MQ
   class { '::rabbitmq':
     delete_guest_user => true,
   }
-  
-  rabbitmq_user { 'sensu':
-    password => 'd2fj2h02FG83dh2A0hd',
+
+  rabbitmq_vhost { '/sensu':
+    ensure  => present,
+    require => Class['::rabbitmq'],
   }
+
+  rabbitmq_user { 'sensu':
+    admin    => true,
+    password => 'd2fj2h02FG83dh2A0hd',
+    require  => Class['::rabbitmq'],
+  }
+
+  rabbitmq_user_permissions { 'sensu@/sensu':
+    configure_permission => '.*',
+    read_permission      => '.*',
+    write_permission     => '.*',
+    require              => Class['::rabbitmq'],
+  }
+
+# Redis
+  class { 'redis': }
 }
