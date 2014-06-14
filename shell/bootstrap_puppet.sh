@@ -45,8 +45,11 @@ else
   echo 'git found.'
 fi
 
-cp /vagrant/puppet/Puppetfile $PUPPET_DIR
+if [ "$(gem search -i bundler)" = "false" ]; then
+  gem install bundler
+fi
 
+cp /vagrant/puppet/Puppetfile $PUPPET_DIR
 if [ "$(gem search -i librarian-puppet)" = "false" ]; then
   gem install librarian-puppet
   cd $PUPPET_DIR && librarian-puppet install --clean
